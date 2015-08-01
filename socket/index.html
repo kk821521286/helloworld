@@ -1,0 +1,121 @@
+<html>
+<head>
+<meta charset="utf-8"/>
+<title>智能采集仪模拟客户端</title>
+<style type="text/css">
+body{
+	text-align:center;
+	background: #7fff00  no-repeat fixed center;
+}
+</style>
+<script src="/json.js"></script> <!-- for ie -->
+<script src="text/javascript"></script>
+<script src="http://sandbox.runjs.cn/js/sandbox/jquery/jquery-1.8.2.min.js"></script>
+<script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+
+<h1>数据采集终端</h1>
+<div><p id="time">2015-04-26-00:00:00</p></div>
+<div><p id="status">Waiting for connect</p></div>
+<div><p id="message">Server says:  null   </p></div>
+<button id="connect" onClick='connect()'/>建立连接</button>
+<button id="disconnect" onClick='disconnect()'>断开连接</button>
+<p></p>
+<form id="form-msg" onSubmit="return send()" align="center"  method="post" action="#">
+<p></p>
+<label>温度：</label><input id="msg1" type="text" value="0"rows="4" cols="4"/>
+<p></p>
+<label>腐蚀：</label><input id="msg2" type="text" value="0"rows="4" cols="4" />
+<p></p>
+<label>电压：</label><input id="msg3" type="text" value="0"rows="4" cols="4"/>
+<p></p>
+<input type="submit" value="发送数据"/>
+</form>
+
+
+<div><p id="push_msg1">温度情况:正常</p></div>
+<div><p id="push_msg2">腐蚀情况:正常</p></div>
+<div><p id="push_msg3">电压情况:正常</p></div>
+
+
+<script>
+var msg1 = document.getElementById('msg1');
+$(msg1.form).submit(function() {
+		//表单提交发送信息给SocketIO服务器,服务器端监听msg事件即可获取到信息.
+		socket.emit('msg1', { text: msg1.value });
+		return false;
+		});
+var msg2 = document.getElementById('msg2');
+$(msg2.form).submit(function() {
+		//表单提交发送信息给SocketIO服务器,服务器端监听msg事件即可获取到信息.
+		socket.emit('msg2', { text: msg2.value });
+		return false;
+		});
+var msg3 = document.getElementById('msg3');
+$(msg3.form).submit(function() {
+		//表单提交发送信息给SocketIO服务器,服务器端监听msg事件即可获取到信息.
+		socket.emit('msg3', { text: msg3.value });
+		return false;
+		});
+</script>
+<script>
+var socket;
+
+function connect() {
+		socket = io.connect(null);
+		//连接建立后注册的函数
+		socket.on('time',function(data){time(data);});
+		socket.on('connect', function(){ status_update("Connected to Server"); });
+		socket.on('disconnect', function(){ status_update("Disconnected from Server"); });
+		socket.on('message', function(data){ message(data); });
+		socket.on('push_msg1',function(data){push_msg1(data);});
+		socket.on('push_msg2',function(data){push_msg2(data);});
+		socket.on('push_msg3',function(data){push_msg3(data);});
+
+		socket.emit('message','hello server');
+
+		var interval = setInterval(function(){
+				var mytime = new Date();
+				socket.emit('time', mytime.getFullYear() +"-"+ mytime.getMonth() +"-"+ mytime.getDate()+"-"+ mytime.getHours() + ":" + 
+					mytime.getMinutes() +":"+ mytime.getSeconds());
+				},1000);
+}
+//断开本地的连接 
+function disconnect() {
+	//io.disconnect();
+	socket.disconnect();
+}
+//接收来自server端的message数据
+function message(data) {
+	document.getElementById('message').innerHTML = "Server says: " + data.hello;
+}
+//接收来自server端的push_msg1数据
+function push_msg1(data) {
+	document.getElementById('push_msg1').innerHTML = data;
+}
+//接收来自server端的push_msg2数据
+function push_msg2(data) {
+	document.getElementById('push_msg2').innerHTML = data;
+}
+//接收来自server端的push_msg3数据
+function push_msg3(data) {
+	document.getElementById('push_msg3').innerHTML = data;
+}
+//接收来自server端的time数据
+function time(data) {
+	document.getElementById('time').innerHTML = data;
+}
+//更新本地的status
+function status_update(txt){
+	document.getElementById('status').innerHTML = txt;
+}
+//发送给server端的数据 
+function send() {
+	var mytime = new Date();
+	socket.emit('message', mytime.getFullYear() +"-"+ mytime.getMonth() +"-"+ mytime.getDate()+"-"+ mytime.getHours() + ":" + mytime.getMinutes() +":"+ mytime.getSeconds());
+};
+</script>
+
+</body>
+</html>
